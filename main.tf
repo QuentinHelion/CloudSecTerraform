@@ -1,7 +1,10 @@
 module "ec2_instance" {
-  source        = "./ec2_instance"
-  my_ip         = chomp(data.http.myip.body)
-  instance_name = var.instance_name
+  source            = "./ec2_instance"
+  instance_name     = var.instance_name
+  vpc_id            = module.network.vpc_id
+  public_subnet_id  = module.network.public_subnet_id
+  ami            = data.aws_ami.debian_11.id
+  my_ip             = chomp(data.http.myip.body)
 }
 
 module "s3_bucket" {
@@ -22,6 +25,11 @@ module "kms" {
   source     = "./kms"
   user_arns  = [module.iam.user_arn]
 }
+
+module "network" {
+  source = "./network"
+}
+
 
 data "http" "myip" {
   url = "http://ipv4.icanhazip.com/"

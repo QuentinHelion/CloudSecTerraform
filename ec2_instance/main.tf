@@ -1,4 +1,3 @@
-# Debian 11 Bullseye
 data "aws_ami" "debian_11" {
   most_recent = true
   owners      = ["136693071363"]
@@ -23,12 +22,14 @@ resource "aws_iam_instance_profile" "kungfu_profile" {
 }
 
 resource "aws_instance" "kungfu_ec2" {
-  ami                  = data.aws_ami.debian_11.id
+  ami                  = var.ami
   instance_type        = "t2.micro"
   security_groups      = [aws_security_group.kungfu_sg.name]
   key_name             = aws_key_pair.kungfu_key.id
   iam_instance_profile = aws_iam_instance_profile.kungfu_profile.name
   user_data            = file("${path.module}/scripts/install_lab.sh")
+  subnet_id            = var.public_subnet_id  # Utilisation du sous-réseau public créé par le module 'network'
+  associate_public_ip_address = true  # L'IP publique pour l'accès
   root_block_device {
     delete_on_termination = true
   }
@@ -44,12 +45,6 @@ resource "aws_eip" "kungfu_eip" {
   }
 }
 
-resource "aws_default_vpc" "default" {
-  tags = {
-    Name = "Default VPC"
-  }
-}
-
 resource "aws_eip_association" "eip_assoc" {
   instance_id   = aws_instance.kungfu_ec2.id
   allocation_id = aws_eip.kungfu_eip.id
@@ -58,7 +53,7 @@ resource "aws_eip_association" "eip_assoc" {
 resource "aws_security_group" "kungfu_sg" {
   name        = "tf-${var.instance_name}-sg"
   description = "Allow SSH & HTTPS traffic from current ip"
-  vpc_id      = aws_default_vpc.default.id
+  vpc_id      = var.vpc_id  # Référence au VPC du module 'network'
 
   ingress {
     description = "Allow all ingress"
