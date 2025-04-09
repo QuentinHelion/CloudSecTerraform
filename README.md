@@ -23,3 +23,7 @@ If you get an error related to policy / account already existing, run these comm
 ```aws iam delete-user --user-name tf-kungfu-user```
 
 ```aws iam delete-policy --policy-arn arn:aws:iam::ACCOUNT_ID:policy/tf-fake-admin-policy```
+
+### Get txt secrets file
+
+```aws s3 cp s3://my-bucket/very_secret_file.txt .```
