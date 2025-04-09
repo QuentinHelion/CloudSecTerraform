@@ -18,6 +18,11 @@ module "iam" {
   policy_name = "kungfu"
 }
 
+module "kms" {
+  source     = "./kms"
+  user_arns  = [module.iam.user_arn]
+}
+
 data "http" "myip" {
   url = "http://ipv4.icanhazip.com/"
 }

@@ -9,3 +9,8 @@ output "access_key_id" {
 output "access_key_secret" {
   value = aws_iam_access_key.kungfu_access_key.secret
 }
+
+output "user_arn" {
+  description = "ARN de l'utilisateur IAM créé"
+  value       = aws_iam_user.kungfu_user.arn
+}
