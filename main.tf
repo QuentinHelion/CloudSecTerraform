@@ -11,6 +11,10 @@ data "aws_ami" "debian_11" {
   }
 }
 
+module "cloudtrail" {
+  source = "./cloudtrail"
+}
+
 module "s3_bucket" {
   source                        = "./s3_bucket"
   bucket_name                   = var.bucket_name
