@@ -1,19 +1,24 @@
+variable "key_name" {
+  type = string
+}
+
+variable "ami_id" {
+  type = string
+}
+
 variable "instance_name" {
-  description = "Name of the instance"
-  type        = string
-}
-
-variable "vpc_id" {
-  description = "The VPC ID"
-  type        = string
-}
-
-variable "public_subnet_id" {
-  description = "The public subnet ID"
-  type        = string
+  type = string
 }
 
 variable "my_ip" {
-  description = "Your current public IP address"
+  type = string
+}
+
+variable "vpc_id" {
+  type = string
+}
+
+variable "public_subnet_id" {
+  description = "ID du subnet public créé par le module network"
   type        = string
 }

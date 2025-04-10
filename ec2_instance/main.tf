@@ -22,9 +22,9 @@ resource "aws_iam_instance_profile" "kungfu_profile" {
 }
 
 resource "aws_instance" "kungfu_ec2" {
-  ami                  = var.ami
+  ami                  = var.ami_id
   instance_type        = "t2.micro"
-  security_groups      = [aws_security_group.kungfu_sg.name]
+  vpc_security_group_ids = [aws_security_group.kungfu_sg.id]
   key_name             = aws_key_pair.kungfu_key.id
   iam_instance_profile = aws_iam_instance_profile.kungfu_profile.name
   user_data            = file("${path.module}/scripts/install_lab.sh")

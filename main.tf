@@ -1,11 +1,16 @@
-module "ec2_instance" {
-  source            = "./ec2_instance"
-  instance_name     = var.instance_name
-  vpc_id            = module.network.vpc_id
-  public_subnet_id  = module.network.public_subnet_id
-  ami            = data.aws_ami.debian_11.id
-  my_ip             = chomp(data.http.myip.body)
+data "aws_ami" "debian_11" {
+  most_recent = true
+  owners      = ["136693071363"]
+  filter {
+    name   = "name"
+    values = ["debian-11-amd64-*"]
+  }
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
 }
+
 
 module "s3_bucket" {
   source                        = "./s3_bucket"
@@ -34,3 +39,14 @@ module "network" {
 data "http" "myip" {
   url = "http://ipv4.icanhazip.com/"
 }
+
+module "ec2_instance" {
+  source            = "./ec2_instance"
+  ami_id            = data.aws_ami.debian_11.id
+  key_name          = "tf-qhel-key"
+  instance_name     = var.instance_name
+  my_ip             = var.my_ip
+  vpc_id            = module.network.vpc_id
+  public_subnet_id  = module.network.public_subnet_id
+}
+
