@@ -11,7 +11,6 @@ data "aws_ami" "debian_11" {
   }
 }
 
-
 module "s3_bucket" {
   source                        = "./s3_bucket"
   bucket_name                   = var.bucket_name
@@ -35,7 +34,7 @@ module "network" {
   source = "./network"
 }
 
-
+# On utilise l'API HTTP pour récupérer l'IP publique de la machine exécutant Terraform
 data "http" "myip" {
   url = "http://ipv4.icanhazip.com/"
 }
@@ -45,8 +44,8 @@ module "ec2_instance" {
   ami_id            = data.aws_ami.debian_11.id
   key_name          = "tf-qhel-key"
   instance_name     = var.instance_name
-  my_ip             = var.my_ip
   vpc_id            = module.network.vpc_id
   public_subnet_id  = module.network.public_subnet_id
+  my_ip             = trimspace(data.http.myip.response_body)  # Passer l'IP dynamique ici
 }
 

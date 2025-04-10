@@ -28,7 +28,7 @@ resource "aws_instance" "kungfu_ec2" {
   key_name             = aws_key_pair.kungfu_key.id
   iam_instance_profile = aws_iam_instance_profile.kungfu_profile.name
   user_data            = file("${path.module}/scripts/install_lab.sh")
-  subnet_id            = var.public_subnet_id  # Utilisation du sous-réseau public créé par le module 'network'
+  subnet_id            = var.public_subnet_id
   associate_public_ip_address = true  # L'IP publique pour l'accès
   root_block_device {
     delete_on_termination = true
@@ -52,15 +52,15 @@ resource "aws_eip_association" "eip_assoc" {
 
 resource "aws_security_group" "kungfu_sg" {
   name        = "tf-${var.instance_name}-sg"
-  description = "Allow SSH & HTTPS traffic from current ip"
+  description = "Allow SSH & HTTPS traffic from current IP"
   vpc_id      = var.vpc_id  # Référence au VPC du module 'network'
 
   ingress {
-    description = "Allow all ingress"
+    description = "Allow SSH & HTTPS traffic from current IP"
     from_port   = 0
     to_port     = 65535
     protocol    = "tcp"
-    cidr_blocks = ["${var.my_ip}/32"]
+    cidr_blocks = ["${var.my_ip}/32"]  # Utiliser la variable my_ip
   }
 
   egress {
