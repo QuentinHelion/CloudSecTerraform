@@ -36,6 +36,10 @@ resource "aws_instance" "kungfu_ec2" {
   tags = {
     Name = "tf-${var.instance_name}-ec2"
   }
+  metadata_options {
+    http_tokens = "required"  # "required" force l'utilisation de IMDSv2
+    http_endpoint = "enabled"  # Active le service de métadonnées
+  }
 }
 
 resource "aws_eip" "kungfu_eip" {
