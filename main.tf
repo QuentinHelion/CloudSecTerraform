@@ -23,9 +23,16 @@ module "iam" {
   source      = "./iam"
   username    = "kungfu"
   policy_name = "kungfu"
-  usernames  = ["test1", "test2"]
-  account_id  = "935610067208"
-  tempadm     = "tf-test1-user"
+  user_groups = {
+    "user1" = ["admin_group", "readonly_group"]
+    "user2" = ["readonly_group"]
+    "tf-test1-user" = [""]
+  }
+  user_policies = {
+    "tf-test1-user" = ["AdministratorAccess"]
+    "user2" = ["ReadOnlyAccess"]
+  }
+  assume_role_user = "tf-test1-user"
 }
 
 module "kms" {
