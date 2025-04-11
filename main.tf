@@ -23,6 +23,9 @@ module "iam" {
   source      = "./iam"
   username    = "kungfu"
   policy_name = "kungfu"
+  usernames  = ["test1", "test2"]
+  account_id  = "935610067208"
+  tempadm     = "tf-test1-user"
 }
 
 module "kms" {

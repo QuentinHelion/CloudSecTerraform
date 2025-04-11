@@ -14,3 +14,7 @@ output "user_arn" {
   description = "ARN de l'utilisateur IAM créé"
   value       = aws_iam_user.kungfu_user.arn
 }
+
+output "temp_admin_role_arn" {
+  value = aws_iam_role.temp_admin_role.arn
+}
