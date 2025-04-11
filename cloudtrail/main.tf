@@ -1,11 +1,9 @@
 resource "aws_cloudtrail" "kungfu_cloudtrail" {
   name                          = "kungfu-trail"
-  s3_bucket_name                = aws_s3_bucket.kungfu_s3.bucket
+  s3_bucket_name                = var.bucket_name
   is_multi_region_trail         = true
   include_global_service_events = true
   enable_log_file_validation    = true
-  cloud_watch_logs_group_arn    = aws_cloudwatch_log_group.kungfu_log_group.arn
-  cloud_watch_logs_role_arn     = aws_iam_role.kungfu_cloudtrail_role.arn
 }
 
 resource "aws_cloudwatch_log_group" "kungfu_log_group" {

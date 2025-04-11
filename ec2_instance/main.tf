@@ -29,7 +29,7 @@ resource "aws_instance" "kungfu_ec2" {
   iam_instance_profile = aws_iam_instance_profile.kungfu_profile.name
   user_data            = file("${path.module}/scripts/install_lab.sh")
   subnet_id            = var.public_subnet_id
-  associate_public_ip_address = true  # L'IP publique pour l'accès
+  associate_public_ip_address = true
   root_block_device {
     delete_on_termination = true
   }
@@ -37,10 +37,11 @@ resource "aws_instance" "kungfu_ec2" {
     Name = "tf-${var.instance_name}-ec2"
   }
   metadata_options {
-    http_tokens = "required"  # "required" force l'utilisation de IMDSv2
-    http_endpoint = "enabled"  # Active le service de métadonnées
+    http_tokens = "required"  
+    http_endpoint = "enabled"
   }
 }
+
 
 resource "aws_eip" "kungfu_eip" {
   vpc = true
@@ -78,4 +79,28 @@ resource "aws_security_group" "kungfu_sg" {
   tags = {
     Name = "tf-${var.instance_name}-sg"
   }
+}
+
+
+resource "aws_iam_role" "ec2_cloudwatch_role" {
+  name = "ec2-cloudwatch-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      },
+    ]
+  })
+}
+
+resource "aws_iam_policy_attachment" "attach_cloudwatch_policy" {
+  name       = "attach-cloudwatch-policy"
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+  roles      = [aws_iam_role.ec2_cloudwatch_role.name]
 }
