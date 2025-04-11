@@ -18,3 +18,11 @@ output "user_arn" {
 output "temp_admin_role_arn" {
   value = aws_iam_role.temp_admin_role.arn
 }
+
+output "flow_logs_role_arn" {
+  value = aws_iam_role.flow_logs_role.arn
+}
+
+output "firehose_delivery_role_arn" {
+  value = aws_iam_role.firehose_delivery_role.arn
+}

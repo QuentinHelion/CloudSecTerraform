@@ -33,6 +33,7 @@ module "iam" {
     "user2" = ["ReadOnlyAccess"]
   }
   assume_role_user = "tf-test1-user"
+  flowlog_bucket_arn = module.s3_bucket.bucket_arn
 }
 
 module "kms" {
@@ -42,6 +43,9 @@ module "kms" {
 
 module "network" {
   source = "./network"
+  vpc_id              = module.network.vpc_id
+  flow_logs_role_arn  = module.iam.flow_logs_role_arn
+  firehose_stream_arn = module.firehose.firehose_stream_arn
 }
 
 # On utilise l'API HTTP pour récupérer l'IP publique de la machine exécutant Terraform
@@ -59,3 +63,8 @@ module "ec2_instance" {
   my_ip             = trimspace(data.http.myip.response_body)  # Passer l'IP dynamique ici
 }
 
+module "firehose" {
+  source        = "./firehose"
+  bucket_arn    = module.s3_bucket.bucket_arn
+  iam_role_arn  = module.iam.firehose_delivery_role_arn
+}

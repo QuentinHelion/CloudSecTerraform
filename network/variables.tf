@@ -35,3 +35,7 @@ variable "instance_type" {
   type        = string
   default     = "t2.micro"
 }
+
+variable "vpc_id" {}
+variable "flow_logs_role_arn" {}
+variable "firehose_stream_arn" {}

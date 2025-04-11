@@ -44,7 +44,7 @@ resource "aws_iam_policy" "fake_admin_policy" {
       {
         "Effect" : "Allow",
         "Action" : [
-          "ec2:DescribeInstances" # TODO : A CHANGER
+          "ec2:DescribeInstances" # TODO : A CHANGER
         ],
         "Resource" : "*"
       }
@@ -93,24 +93,6 @@ resource "aws_iam_user_group_membership" "group_membership" {
 }
 
 ## TEMP ADMIN ROLE
-# commande a executer pour tester : 
-# aws sts assume-role  --role-arn arn:aws:iam::935610067208:role/tf-temp-admin-role   --role-session-name temp-admin-session --serial-number {run this command to get arn aws iam list-mfa-devices --user-name tf-test1-user}  --token-code {code_app_mfa} --profile test1-user
-
-resource "aws_iam_user_policy" "allow_assume_temp_admin" {
-  name = "allow-assume-temp-admin-${var.assume_role_user}"
-  user = aws_iam_user.users[var.assume_role_user].name  # Dynamically reference the user
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = "sts:AssumeRole",
-        Resource = aws_iam_role.temp_admin_role.arn
-      }
-    ]
-  })
-}
 
 resource "aws_iam_role" "temp_admin_role" {
   name = "tf-temp-admin-role"
@@ -133,7 +115,6 @@ resource "aws_iam_role" "temp_admin_role" {
     ]
   })
 }
-
 
 resource "aws_iam_role_policy_attachment" "admin_attach_to_temp_role" {
   role       = aws_iam_role.temp_admin_role.name
@@ -183,4 +164,40 @@ resource "aws_iam_policy_attachment" "policy_attachment" {
   name     = "tf-attach-${each.key}-policies"
   users    = [aws_iam_user.users[each.key].name]
   policy_arn = aws_iam_policy.policies[each.value[0]].arn
+}
+
+## Déclaration des rôles manquants : flow_logs_role et firehose_delivery_role
+
+resource "aws_iam_role" "flow_logs_role" {
+  name = "tf-flow-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement: [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role" "firehose_delivery_role" {
+  name = "tf-firehose-delivery-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement: [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "firehose.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
 }

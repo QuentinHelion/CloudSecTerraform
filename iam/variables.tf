@@ -18,3 +18,8 @@ variable "assume_role_user" {
   type        = string
   default     = "tf-test1-user"  # Example, you can change this value dynamically
 }
+
+variable "flowlog_bucket_arn" {
+  description = "ARN du bucket S3 pour recevoir les logs"
+  type        = string
+}

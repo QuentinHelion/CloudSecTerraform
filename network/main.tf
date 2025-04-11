@@ -67,8 +67,27 @@ resource "aws_route_table" "private" {
   }
 }
 
+resource "aws_kinesis_firehose_delivery_stream" "firehose" {
+  name        = "my-firehose-stream"
+  destination = "s3"
+  
+  s3_configuration {
+    role_arn   = "arn:aws:iam::421751520950:role/firehose-role"
+    bucket_arn = "arn:aws:s3:::qhel"
+  }
+}
+
 # Associer la route table privée au subnet privé
 resource "aws_route_table_association" "private_assoc" {
   subnet_id      = aws_subnet.private_subnet.id
   route_table_id = aws_route_table.private.id
 }
+
+resource "aws_flow_log" "flow_logs" {
+  log_destination      = aws_kinesis_firehose_delivery_stream.firehose.arn
+  log_destination_type = "kinesis-data-firehose"
+  traffic_type         = "ALL"
+  iam_role_arn         = var.flow_logs_role_arn
+  vpc_id               = var.vpc_id
+}
+
