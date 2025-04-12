@@ -66,5 +66,5 @@ module "ec2_instance" {
 module "firehose" {
   source        = "./firehose"
   bucket_arn    = module.s3_bucket.bucket_arn
-  iam_role_arn  = module.iam.firehose_delivery_role_arn
+  iam_role_arn  = module.iam.firehose_role_arn
 }

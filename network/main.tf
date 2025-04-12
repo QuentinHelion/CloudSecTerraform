@@ -70,12 +70,13 @@ resource "aws_route_table" "private" {
 resource "aws_kinesis_firehose_delivery_stream" "firehose" {
   name        = "my-firehose-stream"
   destination = "s3"
-  
+
   s3_configuration {
-    role_arn   = "arn:aws:iam::421751520950:role/firehose-role"
+    role_arn   = aws_iam_role.firehose_role_arn
     bucket_arn = "arn:aws:s3:::qhel"
   }
 }
+
 
 # Associer la route table privée au subnet privé
 resource "aws_route_table_association" "private_assoc" {

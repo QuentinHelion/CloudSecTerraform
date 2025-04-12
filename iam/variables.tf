@@ -9,6 +9,11 @@ variable "user_groups" {
   type        = map(list(string))
 }
 
+variable "aws_region" {
+  type        = string
+  default     = "eu-west-3" # ou ce que tu veux
+}
+
 variable "user_policies" {
   description = "Map of users to policies"
   type        = map(list(string))
@@ -23,3 +28,4 @@ variable "flowlog_bucket_arn" {
   description = "ARN du bucket S3 pour recevoir les logs"
   type        = string
 }
+
