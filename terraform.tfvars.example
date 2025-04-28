@@ -1,10 +1,40 @@
-instance_name = ""
-bucket_name = ""
-region = ""
-ec2_key_name = ""
-iam_username = ""
-policy_name = ""
-ami_owner_id = ""
-firehose_role_name = ""
-firehose_stream_name = ""
+# General settings
+instance_name    = "your-instance-name"
+bucket_name      = "your-s3-bucket-name"
+region           = "eu-west-3"
+ami_owner_id     = "136693071363"
 
+# SSH Key
+public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCyour-public-key-here"
+
+# Firehose settings
+firehose_role_name   = "your-firehose-role-name"
+firehose_stream_name = "your-firehose-stream-name"
+
+# Networking settings
+vpc_cidr_block         = "10.0.0.0/16"
+vpc_name               = "tf-main-vpc"
+public_subnet_cidr     = "10.0.1.0/24"
+private_subnet_cidr    = "10.0.2.0/24"
+availability_zone      = "eu-west-3a"
+public_subnet_name     = "tf-public-subnet"
+private_subnet_name    = "tf-private-subnet"
+internet_gateway_name  = "main-gateway"
+public_route_table_name = "public-rt"
+private_route_table_name = "private-rt"
+
+# IAM settings
+iam_username         = "your-iam-username"
+iam_policy_name      = "your-iam-policy-name"
+iam_assume_role_user = "tf-test1-user"
+
+iam_user_groups = {
+  "user1"         = ["admin_group", "readonly_group"]
+  "user2"         = ["readonly_group"]
+  "tf-test1-user" = [""]
+}
+
+iam_user_policies = {
+  "tf-test1-user" = ["AdministratorAccess"]
+  "user2"         = ["ReadOnlyAccess"]
+}
