@@ -22,15 +22,15 @@ resource "aws_iam_user_policy" "kungfu_policy" {
   user = aws_iam_user.kungfu_user.name
 
   policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
+    Version = "2012-10-17",
+    Statement = [
       {
-        "Effect" : "Allow",
-        "Action" : [
+        Effect = "Allow",
+        Action = [
           "iam:AttachUserPolicy",
           "iam:CreateUser"
         ],
-        "Resource" : [
+        Resource = [
           "arn:aws:iam::421751520950:user/fake-admin*",
           "arn:aws:iam::421751520950:policy/tf-fake-admin-policy"
         ]
@@ -43,14 +43,45 @@ resource "aws_iam_policy" "fake_admin_policy" {
   name = "tf-fake-admin-policy"
 
   policy = jsonencode({
-    "Version" : "2012-10-17",
-    "Statement" : [
+    Version = "2012-10-17",
+    Statement = [
       {
-        "Effect" : "Allow",
-        "Action" : [
-          "ec2:DescribeInstances" # TODO : A CHANGER
+        Effect = "Allow",
+        Action = [
+          "ec2:DescribeInstances"
         ],
-        "Resource" : "*"
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Correction : Créer une policy personnalisée pour CloudTrail
+resource "aws_iam_policy" "cloudtrail_policy" {
+  name        = "kungfu-cloudtrail-policy"
+  description = "Allow CloudTrail to write to S3 and CloudWatch Logs"
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "s3:GetBucketAcl",
+          "s3:PutObject"
+        ],
+        Resource = [
+          "arn:aws:s3:::tf-${var.bucket_name}-bucket",
+          "arn:aws:s3:::tf-${var.bucket_name}-bucket/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
       }
     ]
   })

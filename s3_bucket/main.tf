@@ -11,7 +11,39 @@ resource "aws_s3_bucket_public_access_block" "kungfu_block_public" {
   restrict_public_buckets = true
 }
 
-# Créer un fichier avec les informations d'identification dans S3
+# Correction : Ajouter une policy pour CloudTrail
+resource "aws_s3_bucket_policy" "cloudtrail_bucket_policy" {
+  bucket = aws_s3_bucket.kungfu_s3.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AWSCloudTrailAclCheck"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:GetBucketAcl"
+        Resource  = "arn:aws:s3:::${aws_s3_bucket.kungfu_s3.id}"
+      },
+      {
+        Sid       = "AWSCloudTrailWrite"
+        Effect    = "Allow"
+        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Action    = "s3:PutObject"
+        Resource  = "arn:aws:s3:::${aws_s3_bucket.kungfu_s3.id}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        Condition = {
+          StringEquals = {
+            "s3:x-amz-acl" = "bucket-owner-full-control"
+          }
+        }
+      }
+    ]
+  })
+}
+
+# Pour récupérer l'Account ID dynamiquement
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_object" "very_secret_upload" {
   bucket  = aws_s3_bucket.kungfu_s3.id
   key     = "very_secret_file.txt"
@@ -44,7 +76,7 @@ resource "aws_iam_role" "firehose_role" {
         Principal = {
           Service = "firehose.amazonaws.com"
         }
-      },
+      }
     ]
   })
 }

@@ -18,18 +18,20 @@ resource "aws_cloudwatch_dashboard" "ec2_dashboard" {
   dashboard_name = "EC2-Dashboard"
 
   dashboard_body = jsonencode({
-    "widgets": [
+    widgets = [
       {
-        "type": "metric",
-        "x": 0,
-        "y": 0,
-        "width": 12,
-        "height": 6,
-        "properties": {
-          "metrics": [
+        type = "metric",
+        x    = 0,
+        y    = 0,
+        width = 12,
+        height = 6,
+        properties = {
+          metrics = [
             [ "AWS/EC2", "CPUUtilization", "InstanceId", var.instance_id ]
           ],
-          "title": "CPU Utilization"
+          title       = "CPU Utilization",
+          region      = var.aws_region,
+          annotations = {} # Ajout obligatoire même si vide
         }
       }
     ]

@@ -14,3 +14,8 @@ output "user_arn" {
   description = "ARN de l'utilisateur IAM créé"
   value       = aws_iam_user.kungfu_user.arn
 }
+
+output "cloudtrail_policy_arn" {
+  description = "ARN of the policy for CloudTrail"
+  value       = aws_iam_policy.cloudtrail_policy.arn
+}
