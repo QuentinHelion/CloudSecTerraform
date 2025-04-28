@@ -1,37 +1,49 @@
-# modules/network/variables.tf
-
-variable "vpc_cidr" {
+variable "vpc_cidr_block" {
   description = "CIDR block for the VPC"
   type        = string
-  default     = "10.0.0.0/16"
+}
+
+variable "vpc_name" {
+  description = "Name tag for the VPC"
+  type        = string
 }
 
 variable "public_subnet_cidr" {
   description = "CIDR block for the public subnet"
   type        = string
-  default     = "10.0.1.0/24"
 }
 
 variable "private_subnet_cidr" {
   description = "CIDR block for the private subnet"
   type        = string
-  default     = "10.0.2.0/24"
 }
 
-variable "public_subnet_az" {
-  description = "Availability Zone for the public subnet"
+variable "availability_zone" {
+  description = "Availability Zone for the subnets"
   type        = string
-  default     = "eu-west-3a"
 }
 
-variable "private_subnet_az" {
-  description = "Availability Zone for the private subnet"
+variable "public_subnet_name" {
+  description = "Name tag for the public subnet"
   type        = string
-  default     = "eu-west-3b"
 }
 
-variable "instance_type" {
-  description = "Instance type for the EC2"
+variable "private_subnet_name" {
+  description = "Name tag for the private subnet"
   type        = string
-  default     = "t2.micro"
+}
+
+variable "internet_gateway_name" {
+  description = "Name tag for the internet gateway"
+  type        = string
+}
+
+variable "public_route_table_name" {
+  description = "Name tag for the public route table"
+  type        = string
+}
+
+variable "private_route_table_name" {
+  description = "Name tag for the private route table"
+  type        = string
 }

@@ -1,2 +1,10 @@
 instance_name = ""
 bucket_name = ""
+region = ""
+ec2_key_name = ""
+iam_username = ""
+policy_name = ""
+ami_owner_id = ""
+firehose_role_name = ""
+firehose_stream_name = ""
+

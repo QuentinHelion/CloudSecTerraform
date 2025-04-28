@@ -1,44 +1,60 @@
-# Créer le VPC
+#########################################
+# VPC
+#########################################
+
 resource "aws_vpc" "main_vpc" {
-  cidr_block = "10.0.0.0/16"
+  cidr_block = var.vpc_cidr_block
+
   tags = {
-    Name = "tf-main-vpc"
+    Name = var.vpc_name
   }
 }
 
-# Créer le subnet public
+#########################################
+# PUBLIC SUBNET 
+#########################################
+
 resource "aws_subnet" "public_subnet" {
   vpc_id                  = aws_vpc.main_vpc.id
-  cidr_block              = "10.0.1.0/24"
+  cidr_block              = var.public_subnet_cidr
   map_public_ip_on_launch = true
-  availability_zone       = "eu-west-3a"
+  availability_zone       = var.availability_zone
 
   tags = {
-    Name = "tf-public-subnet"
+    Name = var.public_subnet_name
   }
 }
 
-# Créer le subnet privé
+#########################################
+# PRIVATE SUBNET
+#########################################
+
 resource "aws_subnet" "private_subnet" {
   vpc_id            = aws_vpc.main_vpc.id
-  cidr_block        = "10.0.2.0/24"
-  availability_zone = "eu-west-3a"
+  cidr_block        = var.private_subnet_cidr
+  availability_zone = var.availability_zone
 
   tags = {
-    Name = "tf-private-subnet"
+    Name = var.private_subnet_name
   }
 }
 
-# Créer l'Internet Gateway
+#########################################
+# INTERNET GATEWAY
+#########################################
+
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main_vpc.id
 
   tags = {
-    Name = "main-gateway"
+    Name = var.internet_gateway_name
   }
 }
 
-# Créer la table de routage publique
+#########################################
+# PUBLIC ROUTE TABLE 
+#########################################
+
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main_vpc.id
 
@@ -48,26 +64,27 @@ resource "aws_route_table" "public" {
   }
 
   tags = {
-    Name = "public-rt"
+    Name = var.public_route_table_name
   }
 }
 
-# Associer la table de routage publique au subnet public
 resource "aws_route_table_association" "public_assoc" {
   subnet_id      = aws_subnet.public_subnet.id
   route_table_id = aws_route_table.public.id
 }
 
-# Créer une route table privée (si nécessaire)
+#########################################
+# PRIVATE ROUTE TABLE 
+#########################################
+
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main_vpc.id
 
   tags = {
-    Name = "private-rt"
+    Name = var.private_route_table_name
   }
 }
 
-# Associer la route table privée au subnet privé
 resource "aws_route_table_association" "private_assoc" {
   subnet_id      = aws_subnet.private_subnet.id
   route_table_id = aws_route_table.private.id

@@ -1,6 +1,18 @@
+#########################################
+# BUCKET S3
+#########################################
+
 resource "aws_s3_bucket" "kungfu_s3" {
   bucket = "tf-${var.bucket_name}-bucket"
+
+  tags = {
+    Name = "tf-${var.bucket_name}-bucket"
+  }
 }
+
+#########################################
+# BLOCK PUBLIC ACCESS
+#########################################
 
 resource "aws_s3_bucket_public_access_block" "kungfu_block_public" {
   bucket = aws_s3_bucket.kungfu_s3.id
@@ -11,26 +23,35 @@ resource "aws_s3_bucket_public_access_block" "kungfu_block_public" {
   restrict_public_buckets = true
 }
 
-# Correction : Ajouter une policy pour CloudTrail
+#########################################
+# BUCKET POLICY POUR CLOUDTRAIL
+#########################################
+
+data "aws_caller_identity" "current" {}
+
 resource "aws_s3_bucket_policy" "cloudtrail_bucket_policy" {
   bucket = aws_s3_bucket.kungfu_s3.id
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
         Sid       = "AWSCloudTrailAclCheck"
         Effect    = "Allow"
-        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
         Action    = "s3:GetBucketAcl"
-        Resource  = "arn:aws:s3:::${aws_s3_bucket.kungfu_s3.id}"
+        Resource  = "arn:aws:s3:::${aws_s3_bucket.kungfu_s3.bucket}"
       },
       {
         Sid       = "AWSCloudTrailWrite"
         Effect    = "Allow"
-        Principal = { Service = "cloudtrail.amazonaws.com" }
+        Principal = {
+          Service = "cloudtrail.amazonaws.com"
+        }
         Action    = "s3:PutObject"
-        Resource  = "arn:aws:s3:::${aws_s3_bucket.kungfu_s3.id}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
+        Resource  = "arn:aws:s3:::${aws_s3_bucket.kungfu_s3.bucket}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"
         Condition = {
           StringEquals = {
             "s3:x-amz-acl" = "bucket-owner-full-control"
@@ -41,48 +62,17 @@ resource "aws_s3_bucket_policy" "cloudtrail_bucket_policy" {
   })
 }
 
-# Pour récupérer l'Account ID dynamiquement
-data "aws_caller_identity" "current" {}
+#########################################
+# VERY SECRET FILE UPLOAD
+#########################################
 
 resource "aws_s3_object" "very_secret_upload" {
   bucket  = aws_s3_bucket.kungfu_s3.id
   key     = "very_secret_file.txt"
+
   content = templatefile("${path.module}/very_secret_file.tpl.txt", {
     username = var.very_secret_username
     secret   = var.very_secret_access_key_secret
     id       = var.very_secret_access_key_id
   })
-}
-
-resource "aws_kinesis_firehose_delivery_stream" "cloudwatch_to_s3" {
-  name        = "cloudwatch-to-s3"
-  destination = "s3"
-
-  s3_configuration {
-    role_arn   = aws_iam_role.firehose_role.arn
-    bucket_arn = aws_s3_bucket.kungfu_s3.arn
-  }
-}
-
-resource "aws_iam_role" "firehose_role" {
-  name = "firehose-cloudwatch-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "firehose.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-resource "aws_iam_policy_attachment" "firehose_policy_attachment" {
-  name       = "firehose-policy-attachment"
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-  roles      = [aws_iam_role.firehose_role.name]
 }

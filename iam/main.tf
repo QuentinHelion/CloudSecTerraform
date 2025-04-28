@@ -1,3 +1,7 @@
+#########################################
+# IAM USER
+#########################################
+
 resource "aws_iam_user" "kungfu_user" {
   name          = "tf-${var.username}-user"
   force_destroy = true
@@ -6,6 +10,10 @@ resource "aws_iam_user" "kungfu_user" {
 resource "aws_iam_access_key" "kungfu_access_key" {
   user = aws_iam_user.kungfu_user.name
 }
+
+#########################################
+# ATTACH EXISTING READONLY POLICY
+#########################################
 
 data "aws_iam_policy" "full_read_only_policy" {
   name = "ReadOnlyAccess"
@@ -16,6 +24,12 @@ resource "aws_iam_policy_attachment" "attach_full_read_only" {
   users      = [aws_iam_user.kungfu_user.name]
   policy_arn = data.aws_iam_policy.full_read_only_policy.arn
 }
+
+#########################################
+# IAM POLICY FOR FAKE ADMIN
+#########################################
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_iam_user_policy" "kungfu_policy" {
   name = "tf-${var.policy_name}-policy"
@@ -31,8 +45,8 @@ resource "aws_iam_user_policy" "kungfu_policy" {
           "iam:CreateUser"
         ],
         Resource = [
-          "arn:aws:iam::421751520950:user/fake-admin*",
-          "arn:aws:iam::421751520950:policy/tf-fake-admin-policy"
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/fake-admin*",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/tf-fake-admin-policy"
         ]
       }
     ]
@@ -56,7 +70,10 @@ resource "aws_iam_policy" "fake_admin_policy" {
   })
 }
 
-# Correction : Créer une policy personnalisée pour CloudTrail
+#########################################
+# IAM POLICY FOR CLOUDTRAIL
+#########################################
+
 resource "aws_iam_policy" "cloudtrail_policy" {
   name        = "kungfu-cloudtrail-policy"
   description = "Allow CloudTrail to write to S3 and CloudWatch Logs"
@@ -71,8 +88,8 @@ resource "aws_iam_policy" "cloudtrail_policy" {
           "s3:PutObject"
         ],
         Resource = [
-          "arn:aws:s3:::tf-${var.bucket_name}-bucket",
-          "arn:aws:s3:::tf-${var.bucket_name}-bucket/*"
+          "arn:aws:s3:::${var.s3_bucket_name}",
+          "arn:aws:s3:::${var.s3_bucket_name}/*"
         ]
       },
       {
@@ -85,4 +102,138 @@ resource "aws_iam_policy" "cloudtrail_policy" {
       }
     ]
   })
+}
+
+
+## PART 4
+
+resource "aws_iam_group" "all_users_group" {
+  name = "tf-all-users-group"
+}
+
+resource "aws_iam_policy" "enforce_mfa_policy" {
+  name        = "tf-enforce-mfa"
+  description = "Deny all actions unless MFA is enabled"
+
+  policy = jsonencode({
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Sid": "BlockMostAccessUnlessMFAPresent",
+        "Effect": "Deny",
+        "Action": "*",
+        "Resource": "*",
+        "Condition": {
+          "BoolIfExists": {
+            "aws:MultiFactorAuthPresent": "false"
+          }
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_group_policy_attachment" "enforce_mfa_group_attachment" {
+  group      = aws_iam_group.all_users_group.name
+  policy_arn = aws_iam_policy.enforce_mfa_policy.arn
+}
+
+resource "aws_iam_user_group_membership" "group_membership" {
+  for_each = aws_iam_user.users
+
+  user   = each.value.name
+  groups = [aws_iam_group.all_users_group.name]
+}
+
+## TEMP ADMIN ROLE
+# commande a executer pour tester : 
+# aws sts assume-role  --role-arn arn:aws:iam::935610067208:role/tf-temp-admin-role   --role-session-name temp-admin-session --serial-number {run this command to get arn aws iam list-mfa-devices --user-name tf-test1-user}  --token-code {code_app_mfa} --profile test1-user
+
+resource "aws_iam_user_policy" "allow_assume_temp_admin" {
+  name = "allow-assume-temp-admin-${var.assume_role_user}"
+  user = aws_iam_user.users[var.assume_role_user].name  # Dynamically reference the user
+
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = "sts:AssumeRole",
+        Resource = aws_iam_role.temp_admin_role.arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role" "temp_admin_role" {
+  name = "tf-temp-admin-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement: [
+      {
+        Effect = "Allow",
+        Principal = {
+          AWS = "*"
+        },
+        Action = "sts:AssumeRole",
+        Condition = {
+          Bool = {
+            "aws:MultiFactorAuthPresent" = "true"
+          }
+        }
+      }
+    ]
+  })
+}
+
+
+resource "aws_iam_role_policy_attachment" "admin_attach_to_temp_role" {
+  role       = aws_iam_role.temp_admin_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
+}
+
+## dynamic edits 
+# Part 2: Create IAM Users
+resource "aws_iam_user" "users" {
+  for_each = var.user_groups
+  name     = "tf-${each.key}-user"
+  force_destroy = true
+}
+
+# Part 3: Create IAM Groups
+resource "aws_iam_group" "groups" {
+  for_each = toset(flatten([for user, groups in var.user_groups : groups]))
+  name     = "tf-${each.value}-group"
+}
+
+# Part 4: Attach Users to Groups
+resource "aws_iam_user_group_membership" "user_group_membership" {
+  for_each = var.user_groups
+  user     = aws_iam_user.users[each.key].name
+  groups   = [for group in each.value : aws_iam_group.groups[group].name]
+}
+
+# Part 5: Create IAM Policies
+resource "aws_iam_policy" "policies" {
+  for_each = toset(flatten([for user, policies in var.user_policies : policies]))
+  name     = each.value
+  policy   = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = "*",
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Part 6: Attach Policies to Users
+resource "aws_iam_policy_attachment" "policy_attachment" {
+  for_each = var.user_policies
+  name     = "tf-attach-${each.key}-policies"
+  users    = [aws_iam_user.users[each.key].name]
+  policy_arn = aws_iam_policy.policies[each.value[0]].arn
 }

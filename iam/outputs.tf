@@ -19,3 +19,7 @@ output "cloudtrail_policy_arn" {
   description = "ARN of the policy for CloudTrail"
   value       = aws_iam_policy.cloudtrail_policy.arn
 }
+
+output "temp_admin_role_arn" {
+  value = aws_iam_role.temp_admin_role.arn
+}
