@@ -1,30 +1,29 @@
 variable "username" {
-  description = "Name of the IAM user"
+  description = "Username for the base kungfu user"
   type        = string
 }
 
 variable "policy_name" {
-  description = "Name of the IAM user policy"
+  description = "Name for the kungfu policy"
   type        = string
 }
 
 variable "s3_bucket_name" {
-  description = "Name of the S3 bucket used by CloudTrail"
+  description = "S3 Bucket name for CloudTrail logs"
   type        = string
 }
 
 variable "user_groups" {
-  description = "Map of users to groups"
+  description = "Mapping of IAM users to groups"
   type        = map(list(string))
 }
 
 variable "user_policies" {
-  description = "Map of users to policies"
+  description = "Mapping of IAM users to their policy names"
   type        = map(list(string))
 }
 
 variable "assume_role_user" {
-  description = "The user who will be able to assume the temp admin role"
+  description = "IAM user allowed to assume the temp admin role"
   type        = string
-  default     = "tf-test1-user"  # Example, you can change this value dynamically
 }

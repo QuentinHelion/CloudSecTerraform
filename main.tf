@@ -48,7 +48,7 @@ module "ec2_instance" {
   source            = "./ec2_instance"
 
   ami_id            = data.aws_ami.debian_11.id
-  key_name          = var.ec2_key_name
+  public_key        = var.public_key
   instance_name     = var.instance_name
   vpc_id            = module.network.vpc_id
   public_subnet_id  = module.network.public_subnet_id
@@ -73,22 +73,15 @@ module "s3_bucket" {
 ######################################
 
 module "iam" {
-  source      = "./iam"
+  source = "./iam"
 
-  username    = var.iam_username
-  policy_name = var.policy_name
-  s3_bucket_name = module.s3_bucket.bucket_name
-  
-  user_groups = {
-    "user1" = ["admin_group", "readonly_group"]
-    "user2" = ["readonly_group"]
-    "tf-test1-user" = [""]
-  }
-  user_policies = {
-    "tf-test1-user" = ["AdministratorAccess"]
-    "user2" = ["ReadOnlyAccess"]
-  }
-  assume_role_user = "tf-test1-user"
+  username         = var.iam_username
+  policy_name      = var.iam_policy_name
+  s3_bucket_name   = module.s3_bucket.bucket_name
+
+  user_groups      = var.iam_user_groups
+  user_policies    = var.iam_user_policies
+  assume_role_user = var.iam_assume_role_user
 }
 
 ######################################
@@ -96,10 +89,11 @@ module "iam" {
 ######################################
 
 module "cloudwatch" {
-  source      = "./cloudwatch"
+  source = "./cloudwatch"
 
   instance_id = module.ec2_instance.instance_id
   aws_region  = var.region
+  firehose_arn = aws_kinesis_firehose_delivery_stream.cloudwatch_firehose.arn
 }
 
 ######################################

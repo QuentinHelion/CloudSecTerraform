@@ -1,10 +1,13 @@
 #########################################
-# IAM USER
+# IAM USER (Static user pour base)
 #########################################
 
 resource "aws_iam_user" "kungfu_user" {
   name          = "tf-${var.username}-user"
   force_destroy = true
+  tags = {
+    Name = "tf-${var.username}-user"
+  }
 }
 
 resource "aws_iam_access_key" "kungfu_access_key" {
@@ -12,17 +15,13 @@ resource "aws_iam_access_key" "kungfu_access_key" {
 }
 
 #########################################
-# ATTACH EXISTING READONLY POLICY
+# ATTACH AWS READONLY POLICY
 #########################################
-
-data "aws_iam_policy" "full_read_only_policy" {
-  name = "ReadOnlyAccess"
-}
 
 resource "aws_iam_policy_attachment" "attach_full_read_only" {
   name       = "tf-attach-readonly"
   users      = [aws_iam_user.kungfu_user.name]
-  policy_arn = data.aws_iam_policy.full_read_only_policy.arn
+  policy_arn = "arn:aws:iam::aws:policy/ReadOnlyAccess"
 }
 
 #########################################
@@ -104,8 +103,74 @@ resource "aws_iam_policy" "cloudtrail_policy" {
   })
 }
 
+#########################################
+# DYNAMIC IAM USERS
+#########################################
 
-## PART 4
+resource "aws_iam_user" "users" {
+  for_each     = var.user_groups
+  name         = "tf-${each.key}-user"
+  force_destroy = true
+
+  tags = {
+    Name = "tf-${each.key}-user"
+  }
+}
+
+#########################################
+# DYNAMIC IAM GROUPS
+#########################################
+
+resource "aws_iam_group" "groups" {
+  for_each = toset(flatten([for user, groups in var.user_groups : groups if length(groups) > 0]))
+  name     = "tf-${each.value}-group"
+}
+
+#########################################
+# ATTACH USERS TO GROUPS
+#########################################
+
+resource "aws_iam_user_group_membership" "user_group_membership" {
+  for_each = var.user_groups
+
+  user   = aws_iam_user.users[each.key].name
+  groups = [for group in each.value : aws_iam_group.groups[group].name]
+}
+
+#########################################
+# DYNAMIC IAM POLICIES (1 per policy name)
+#########################################
+
+resource "aws_iam_policy" "policies" {
+  for_each = toset(flatten([for user, policies in var.user_policies : policies if length(policies) > 0]))
+  name     = each.value
+  policy   = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = "*",
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+#########################################
+# 📎 ATTACH POLICIES TO USERS
+#########################################
+
+resource "aws_iam_policy_attachment" "policy_attachment" {
+  for_each = var.user_policies
+
+  name       = "tf-attach-${each.key}-policies"
+  users      = [aws_iam_user.users[each.key].name]
+  policy_arn = aws_iam_policy.policies[each.value[0]].arn
+}
+
+#########################################
+# MFA ENFORCEMENT FOR ALL USERS
+#########################################
 
 resource "aws_iam_group" "all_users_group" {
   name = "tf-all-users-group"
@@ -116,16 +181,16 @@ resource "aws_iam_policy" "enforce_mfa_policy" {
   description = "Deny all actions unless MFA is enabled"
 
   policy = jsonencode({
-    "Version": "2012-10-17",
-    "Statement": [
+    Version = "2012-10-17",
+    Statement = [
       {
-        "Sid": "BlockMostAccessUnlessMFAPresent",
-        "Effect": "Deny",
-        "Action": "*",
-        "Resource": "*",
-        "Condition": {
-          "BoolIfExists": {
-            "aws:MultiFactorAuthPresent": "false"
+        Sid = "BlockMostAccessUnlessMFAPresent",
+        Effect = "Deny",
+        Action = "*",
+        Resource = "*",
+        Condition = {
+          BoolIfExists = {
+            "aws:MultiFactorAuthPresent" = "false"
           }
         }
       }
@@ -145,34 +210,18 @@ resource "aws_iam_user_group_membership" "group_membership" {
   groups = [aws_iam_group.all_users_group.name]
 }
 
-## TEMP ADMIN ROLE
-# commande a executer pour tester : 
-# aws sts assume-role  --role-arn arn:aws:iam::935610067208:role/tf-temp-admin-role   --role-session-name temp-admin-session --serial-number {run this command to get arn aws iam list-mfa-devices --user-name tf-test1-user}  --token-code {code_app_mfa} --profile test1-user
-
-resource "aws_iam_user_policy" "allow_assume_temp_admin" {
-  name = "allow-assume-temp-admin-${var.assume_role_user}"
-  user = aws_iam_user.users[var.assume_role_user].name  # Dynamically reference the user
-
-  policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [
-      {
-        Effect = "Allow",
-        Action = "sts:AssumeRole",
-        Resource = aws_iam_role.temp_admin_role.arn
-      }
-    ]
-  })
-}
+#########################################
+# TEMP ADMIN ROLE WITH MFA
+#########################################
 
 resource "aws_iam_role" "temp_admin_role" {
   name = "tf-temp-admin-role"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17",
-    Statement: [
+    Statement = [
       {
-        Effect = "Allow",
+        Effect    = "Allow",
         Principal = {
           AWS = "*"
         },
@@ -187,53 +236,23 @@ resource "aws_iam_role" "temp_admin_role" {
   })
 }
 
+resource "aws_iam_user_policy" "allow_assume_temp_admin" {
+  name = "allow-assume-temp-admin-${var.assume_role_user}"
+  user = aws_iam_user.users[var.assume_role_user].name
 
-resource "aws_iam_role_policy_attachment" "admin_attach_to_temp_role" {
-  role       = aws_iam_role.temp_admin_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-}
-
-## dynamic edits 
-# Part 2: Create IAM Users
-resource "aws_iam_user" "users" {
-  for_each = var.user_groups
-  name     = "tf-${each.key}-user"
-  force_destroy = true
-}
-
-# Part 3: Create IAM Groups
-resource "aws_iam_group" "groups" {
-  for_each = toset(flatten([for user, groups in var.user_groups : groups]))
-  name     = "tf-${each.value}-group"
-}
-
-# Part 4: Attach Users to Groups
-resource "aws_iam_user_group_membership" "user_group_membership" {
-  for_each = var.user_groups
-  user     = aws_iam_user.users[each.key].name
-  groups   = [for group in each.value : aws_iam_group.groups[group].name]
-}
-
-# Part 5: Create IAM Policies
-resource "aws_iam_policy" "policies" {
-  for_each = toset(flatten([for user, policies in var.user_policies : policies]))
-  name     = each.value
-  policy   = jsonencode({
+  policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
-        Action = "*",
-        Resource = "*"
+        Effect   = "Allow",
+        Action   = "sts:AssumeRole",
+        Resource = aws_iam_role.temp_admin_role.arn
       }
     ]
   })
 }
 
-# Part 6: Attach Policies to Users
-resource "aws_iam_policy_attachment" "policy_attachment" {
-  for_each = var.user_policies
-  name     = "tf-attach-${each.key}-policies"
-  users    = [aws_iam_user.users[each.key].name]
-  policy_arn = aws_iam_policy.policies[each.value[0]].arn
+resource "aws_iam_role_policy_attachment" "admin_attach_to_temp_role" {
+  role       = aws_iam_role.temp_admin_role.name
+  policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
 }

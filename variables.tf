@@ -18,11 +18,6 @@ variable "ec2_key_name" {
   type        = string
 }
 
-variable "iam_username" {
-  description = "IAM username to create"
-  type        = string
-}
-
 variable "policy_name" {
   description = "Name of the IAM policy to create"
   type        = string
@@ -46,6 +41,10 @@ variable "firehose_stream_name" {
   default     = "cloudwatch-to-s3-stream"
 }
 
+variable "public_key" {
+  description = "Public SSH key used for creating the EC2 Key Pair"
+  type        = string
+}
 
 
 ######################################
@@ -99,5 +98,35 @@ variable "public_route_table_name" {
 
 variable "private_route_table_name" {
   description = "Name tag for the private route table"
+  type        = string
+}
+
+
+######################################
+# IAM VARIABLES
+######################################
+
+variable "iam_username" {
+  description = "IAM username to create"
+  type        = string
+}
+
+variable "iam_policy_name" {
+  description = "IAM policy name to create for the user"
+  type        = string
+}
+
+variable "iam_user_groups" {
+  description = "Map of IAM users to the groups they should be attached to"
+  type        = map(list(string))
+}
+
+variable "iam_user_policies" {
+  description = "Map of IAM users to the policies they should have"
+  type        = map(list(string))
+}
+
+variable "iam_assume_role_user" {
+  description = "IAM user allowed to assume roles"
   type        = string
 }

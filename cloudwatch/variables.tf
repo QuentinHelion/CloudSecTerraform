@@ -1,9 +1,14 @@
 variable "instance_id" {
-  description = "L'ID de l'instance EC2 pour surveiller la métrique CPUUtilization"
+  description = "The ID of the EC2 instance to monitor"
   type        = string
 }
 
 variable "aws_region" {
-  description = "AWS Region where resources are deployed"
+  description = "AWS region where resources are deployed"
+  type        = string
+}
+
+variable "firehose_arn" {
+  description = "ARN of the Firehose Delivery Stream"
   type        = string
 }
